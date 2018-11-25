@@ -2,16 +2,16 @@ clc; clear; close all
 %% Test range finder
 
 % Test matrix
-n = 200;
-f = @(x, y, z) 1 ./ sqrt(x + y + z);
+% n = 200;
+% f = @(x, y, z) 1 ./ sqrt(x + y + z);
+% 
+% xGrid = 0.1 : 0.1 : n/10;
+% [X, Y, Z] = meshgrid(xGrid, xGrid, xGrid);
+% F = tensor(f(X, Y, Z));
 
-xGrid = 0.1 : 0.1 : n/10;
-[X, Y, Z] = meshgrid(xGrid, xGrid, xGrid);
-F = tensor(f(X, Y, Z));
+F = tensor(rand(200, 200, 200));
 
-% F = tensor(rand(20, 20, 20));
-
-ranks = 5:5:50;
+ranks = 5:5:100;
 errStandard = zeros(size(ranks));
 errModified = errStandard;
 timeStandard = errStandard;
@@ -22,7 +22,7 @@ for i = 1 : length(ranks)
     r = ranks(i);
     
     tic
-    Tmod = mHOSVD(F, 'tol', 1, 'rank', r, 'oversampling', 3, 'method', 'tol');
+    Tmod = mHOSVD(F, 'tol', 1, 'rank', r, 'oversampling', 10, 'method', 'rank');
     timeModified(i) = toc;
     
     tic
