@@ -1,49 +1,61 @@
 clc; clear; close all
 %% Function related tensor
 
-n = 100;
+% Test tensor
+n = 300;
 f = @(x, y, z) 1 ./ sqrt(x + y + z);
+
 xGrid = 0.1 : 0.1 : n/10;
 [X, Y, Z] = meshgrid(xGrid, xGrid, xGrid);
 F = tensor(f(X, Y, Z));
-clear X Y Z
 
-% Tolerances
+% Tol-based
 trials = 1;
 tolerances = flip(logspace(-11, -1, 6));
-
-% HOSVD-AR
 [errTol, timeTol, ranksTol] = testTolModHOSVD(F, tolerances, trials);
 
-% HOSVD
+% My implementation
 [errMyFunc, timeMyFunc, ranksMyFunc] = testTolHOSVD(F, tolerances, trials);
 
-% HOSVD-TT
-[errSoaFunc, timeSoaFunc, ranksSoaFunc] = testTolSoaHOSVD(F, tolerances, trials);
+% State-of-the-art
+[errSoaFunc, timeSoaFunc, ranksSoaFunc] = testSoaHOSVD(F, 1, tolerances, trials);
+
+figure
+semilogx(errTol, timeTol, 'k-o')
+hold on
+semilogx(errMyFunc, timeMyFunc, 'k-s')
+semilogx(errSoaFunc, timeSoaFunc, 'k-d')
+legend('M1', 'M2', 'M3')
+
+figure
+loglog(tolerances, errTol, 'k-o')
+hold on
+loglog(tolerances, errMyFunc, 'k-s')
+loglog(tolerances, errSoaFunc, 'k-d')
+loglog(tolerances, tolerances, 'k--')
+legend('M1', 'M2', 'M3')
 
 %% Random tensor
 
-n = 100;
+n = 600;
 F = tensor(rand(n, n, n));
 trials = 1;
 ranks = 5:5:50;
 
-% HOSVD-AR
-[errModHOSVD, timeModHOSVD] = testRankModHOSVD(F, ranks, 10, trials);
+% Modified HOSVD - small oversampling
+[errModHOSVD, timeModHOSVD] = rankBasedmHOSVD(F, ranks, 10, trials);
 
-% HOSVD
-[errMyHOSVD, timeMyHOSVD] = testRankHOSVD(F, ranks, trials);
+% My implementation of "standard" HOSVD
+[errMyHOSVD, timeMyHOSVD] = testHOSVD(F, ranks, trials, 0);
 
-% HOSVD-TT
-[errSoaHOSVD, timeSoaHOSVD] = testRankSoaHOSVD(F, ranks, trials);
+% State-of-the-art
+[errSoaHOSVD, timeSoaHOSVD] = testSoaHOSVD(F, 0, ranks, trials);
 
 
 %% Figures
 
-saveFigures = 0;
-titlefunc = @(x) ['$' num2str(x) '\times' num2str(x) '\times' num2str(x) '$ random tensor'];
+saveFigures = 1;
 
-% rank - err
 if exist('createFigure.m')
     W = 6.7; H = 6.7;
     enhanced = 1;
@@ -53,23 +65,23 @@ if exist('createFigure.m')
 else
     figure
 end
-semilogy(ranks, errModHOSVD, 'k-o', 'markersize', 5)
+
+plot(ranks, errModHOSVD, 'k-o', 'markersize', 5)
 hold on
-semilogy(ranks, errMyHOSVD, 'k-s', 'markersize', 5)
-semilogy(ranks, errSoaHOSVD, 'k-d', 'markersize', 5)
+plot(ranks, errMyHOSVD, 'k-s', 'markersize', 5)
+plot(ranks, errSoaHOSVD, 'k-d', 'markersize', 5)
 ylim([0.48, 0.58])
 xlabel('rank', 'interpreter', 'latex')
 ylabel('error', 'interpreter', 'latex')
 box on
 legend({'HOSVD-AR','HOSVD','HOSVD-TT'}, 'location', 'NE', 'interpreter', 'latex')
-title({titlefunc(n)}, 'interpreter', 'latex')
+title({'$200 \times 200 \times 200$ random tensor'}, 'interpreter', 'latex')
 axis square
 axPos = get(gca, 'innerposition');
 if exist('export_fig') && saveFigures
-    export_fig(fig, '../Report/Figures/rankErrBig.eps', '-nocrop')
+    export_fig(fig, '../Report/Figures/rankErr.eps', '-nocrop')
 end
 
-% rank - cost
 if exist('createFigure.m')
     fig = createFigure(W, H);
     enhanced = 1;
@@ -79,17 +91,17 @@ if exist('createFigure.m')
 else
     figure
 end
-semilogy(ranks, timeModHOSVD, 'k-o', 'markersize', 5)
+plot(ranks, timeModHOSVD, 'k-o', 'markersize', 5)
 hold on
-semilogy(ranks, timeMyHOSVD, 'k-s', 'markersize', 5)
-semilogy(ranks, timeSoaHOSVD, 'k-d', 'markersize', 5)
+plot(ranks, timeMyHOSVD, 'k-s', 'markersize', 5)
+plot(ranks, timeSoaHOSVD, 'k-d', 'markersize', 5)
 % ylim([1, 1e2])
 xlabel('rank', 'interpreter', 'latex')
 ylabel('time', 'interpreter', 'latex')
 box on
-title({titlefunc(n)}, 'interpreter', 'latex')
+title({'$200 \times 200 \times 200$ random tensor'}, 'interpreter', 'latex')
 axis square
 set(gca, 'innerposition', axPos);
 if exist('export_fig') && saveFigures
-    export_fig(fig, '../Report/Figures/rankTimeBig.eps', '-nocrop')
+    export_fig(fig, '../Report/Figures/rankTime.eps', '-nocrop')
 end

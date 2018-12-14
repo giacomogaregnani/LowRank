@@ -1,2 +1,3 @@
-Low rank simulations project. 
+Low-rank approximations course project. 
+Giacomo Garegnani
 REQUIRES TENSOR TOOLBOX
